@@ -1,6 +1,9 @@
 ﻿using GestaoConfeitaria.Auth;
 using GestaoConfeitaria.Data;
+using GestaoConfeitaria.Models;
+using GestaoConfeitaria.Request.Auth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,7 +27,7 @@ namespace GestaoConfeitaria.Controllers
         }
 
         [HttpPostAttribute("login")]
-        public async Task<IActionResult> Login(LoginRequest request)
+        public async Task<IActionResult> Login(Auth.LoginRequest request)
         {
             // Usuário fixo para demonstração
             if (request.Username == "admin" && request.Password == "12345")
@@ -87,6 +90,43 @@ namespace GestaoConfeitaria.Controllers
 
             return Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(token) });
 
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] Request.Auth.RegisterRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Username))
+                return BadRequest("Username é obrigatório");
+
+            if (string.IsNullOrWhiteSpace(req.Password))
+                return BadRequest("Password é Obrigatório");
+
+            if (req.Password.Length < 8)
+                return BadRequest("A senha deve ter pelo menos 8 caracteres");
+
+            var existente = await _db.Users.AnyAsync(u => u.Username == req.Username);
+            if (existente)
+                return Conflict("Username já esta sendo usado por outro usuário");
+
+            var hash = BCrypt.Net.BCrypt.HashPassword(req.Password);
+
+            var user = new User
+            {
+                Username = req.Username,
+                PasswordHash = hash,
+                Role = "User",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+
+            return Created($"/api/auth/users/{user.Id}", new
+            {
+                user.Id,
+                user.Username,
+                user.Role
+            });
         }
     }
 }
