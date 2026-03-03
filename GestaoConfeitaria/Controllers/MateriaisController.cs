@@ -2,12 +2,14 @@
 using GestaoConfeitaria.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestaoConfeitaria.Controllers
 {
     [Route("api/materiais")]
     [ApiController]
+    [Authorize]
     public class MateriaisController : ControllerBase
     {
         private readonly BoloDbContext _context;
