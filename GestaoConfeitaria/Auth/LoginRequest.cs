@@ -1,4 +1,4 @@
-namespace MeuProjetoIA.Auth;
+namespace GestaoConfeitaria.Auth;
 
 public class LoginRequest
 {
