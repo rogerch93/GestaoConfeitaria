@@ -20,51 +20,34 @@ public class GroqService
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
     }
 
-    public async Task<string> GenerateResponseAsync(string prompt)
+    public async Task<string> GerarIndicadoresAsync(string prompt)
     {
         var requestBody = new
         {
-            model = "llama-3.3-70b-versatile",
+            model = "mixtral-8x7b-32768",  // ou "llama3-70b-8192" ou outro modelo disponível
             messages = new[]
             {
+                new { role = "system", content = "Você é um analista financeiro especializado em confeitaria e gestão de bolos. Seja objetivo, use números reais dos dados fornecidos e gere indicadores claros como: lucro bruto, margem de lucro, custo médio por bolo, comparação com período anterior, sugestões de melhoria e alerta de prejuízo." },
                 new { role = "user", content = prompt }
             },
             temperature = 0.7,
-            max_tokens = 512
+            max_tokens = 1500
         };
 
-        var content = new StringContent(
-            JsonSerializer.Serialize(requestBody),
-            Encoding.UTF8,
-            "application/json");
+        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _apiKey);
 
-        var response = await _httpClient.PostAsync("chat/completions", content);
-
-        var responseBody = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.PostAsJsonAsync("https://api.groq.com/openai/v1/chat/completions", requestBody);
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException($"Groq API erro {response.StatusCode}: {responseBody}");
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"Erro na API Groq: {response.StatusCode} - {errorContent}");
         }
 
-        // Log raw (mantenha por enquanto, depois pode remover)
-        Console.WriteLine($"Groq Raw Response for prompt '{prompt}': {responseBody}");
+        var jsonResponse = await response.Content.ReadFromJsonAsync<GroqCompletionResponse>();
 
-        // Parsing correto - use classes com nomes que batem exatamente com o JSON
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };  // tolera case
-        var result = JsonSerializer.Deserialize<GroqCompletionResponse>(responseBody, options);
-
-        var contentFromIA = result?.Choices?
-            .FirstOrDefault()?
-            .Message?
-            .Content;
-
-        if (string.IsNullOrWhiteSpace(contentFromIA))
-        {
-            return $"Falha no parsing. Conteúdo não encontrado. Raw: {responseBody}";
-        }
-
-        return contentFromIA.Trim();
+        return jsonResponse?.Choices?.FirstOrDefault()?.Message?.Content
+            ?? "Erro ao processar resposta da IA";
     }
 
     // Classes de resposta EXATAS para o formato Groq/OpenAI
