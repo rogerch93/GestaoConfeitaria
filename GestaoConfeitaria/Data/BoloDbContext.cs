@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using GestaoConfeitaria.Models;
 
-namespace BoloGestaoAPI.Data;
+namespace GestaoConfeitaria.Data;
 
 public class BoloDbContext : DbContext
 {
