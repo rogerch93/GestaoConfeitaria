@@ -28,7 +28,7 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 
-    //Configuração para mostrar o cadeado baerer bi Swagger
+    //Configuração para mostrar o cadeado baerer Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header usando o esquema Bearer.\r\n\r\n" +
@@ -52,7 +52,7 @@ builder.Services.AddSwaggerGen(c =>
                    Id = "Bearer"
                }
            },
-           new string[] {} // esta sendo aplicado para todos os endpoints
+           new string[] {}
         }
     });
 
@@ -81,7 +81,7 @@ builder.Services.AddAuthorization();
 //Rate limiting
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("fixed", opt =>
+    options.AddFixedWindowLimiter("limiteRequisicao", opt =>
     {
         opt.PermitLimit = 10; // limite de 10 requisições
         opt.Window = TimeSpan.FromMinutes(1); //por minuto
@@ -110,10 +110,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
