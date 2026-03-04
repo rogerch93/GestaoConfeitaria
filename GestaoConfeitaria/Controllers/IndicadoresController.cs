@@ -3,12 +3,14 @@ using GestaoConfeitaria.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json; // ou System.Text.Json
 
 namespace GestaoConfeitaria.Controllers
 {
     [Route("api/indicadores")]
+    [EnableRateLimiting("limiteRequisicao")]
     [ApiController]
     [Authorize]
     public class IndicadoresController : ControllerBase

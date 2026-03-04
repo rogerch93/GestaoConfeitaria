@@ -3,11 +3,13 @@ using GestaoConfeitaria.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestaoConfeitaria.Controllers
 {
     [Route("api/vendas")]
+    [EnableRateLimiting("limiteRequisicao")]
     [ApiController]
     [Authorize]
     public class VendasController : ControllerBase

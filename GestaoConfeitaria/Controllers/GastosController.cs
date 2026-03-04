@@ -1,13 +1,15 @@
 ﻿using GestaoConfeitaria.Data;
 using GestaoConfeitaria.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestaoConfeitaria.Controllers
 {
     [Route("api/gastos")]
+    [EnableRateLimiting("limiteRequisicao")]
     [ApiController]
     [Authorize]
     public class GastosController : ControllerBase
