@@ -34,7 +34,7 @@ namespace GestaoConfeitaria.Controllers
             var usuarioLogado = User.FindFirstValue(ClaimTypes.Role);
             if (usuarioLogado != "Admin")
             {
-                return StatusCode(403, "Somente Usuários com a permissão de Admin podem criar novos Usuários.");
+                return StatusCode(403, "Somente Usuários com a permissão de Admin podem gerar Indicadores.");
             }
 
             var vendas = await _db.Vendas
