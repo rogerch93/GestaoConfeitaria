@@ -2,6 +2,7 @@
 using GestaoConfeitaria.Data;
 using GestaoConfeitaria.Models;
 using GestaoConfeitaria.Request.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -93,8 +94,14 @@ namespace GestaoConfeitaria.Controllers
         }
 
         [HttpPost("register")]
+        [Authorize]
         public async Task<IActionResult> Register([FromBody] Request.Auth.RegisterRequest req)
         {
+            var usuarioLogado = User.FindFirstValue(ClaimTypes.Role);
+            if (usuarioLogado != "Admin")
+            {
+                return StatusCode(403, "Somente Usuários com a permissão de Admin podem criar novos Usuários.");
+            }
             if (string.IsNullOrWhiteSpace(req.Username))
                 return BadRequest("Username é obrigatório");
 
