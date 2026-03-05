@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json; // ou System.Text.Json
+using Newtonsoft.Json;
+using System.Security.Claims; // ou System.Text.Json
 
 namespace GestaoConfeitaria.Controllers
 {
@@ -29,6 +30,12 @@ namespace GestaoConfeitaria.Controllers
         {
             var inicio = dataInicio ?? DateTime.UtcNow.AddMonths(-1);
             var fim = dataFim ?? DateTime.UtcNow;
+
+            var usuarioLogado = User.FindFirstValue(ClaimTypes.Role);
+            if (usuarioLogado != "Admin")
+            {
+                return StatusCode(403, "Somente Usuários com a permissão de Admin podem criar novos Usuários.");
+            }
 
             var vendas = await _db.Vendas
                 .Where(v => v.Data >= inicio && v.Data <= fim)
