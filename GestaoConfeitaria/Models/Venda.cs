@@ -4,6 +4,7 @@
     {
         public int Id { get; set; }
         public DateTime Data { get; set; } = DateTime.UtcNow;
+        public DateTime? DataExclusao { get; set; } = DateTime.UtcNow;
         public decimal ValorTotal { get; set; }
         public int QuantidadeBolos { get; set; }
         public string FormaPagamento { get; set; } = "";
