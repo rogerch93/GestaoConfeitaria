@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="GestaoConfeitaria.Blazor/GestaoConfeitaria.Blazor.csproj" Id="df2a46c8-50b0-4ba4-bace-733a34fb709f" />
+  <Project Path="GestaoConfeitaria.Models.Shared/GestaoConfeitariaBiblioteca.csproj" Id="caf63bf9-d0b1-475c-970a-f2274a904be1" />
   <Project Path="GestaoConfeitaria/GestaoConfeitaria.csproj" />
 </Solution>
