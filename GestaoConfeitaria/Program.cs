@@ -100,7 +100,13 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<GroqService>();
 
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowBlazor", builder => builder.WithOrigins("https://localhost:7031/").AllowAnyMethod().AllowAnyHeader());
+});
+
 var app = builder.Build();
+
+app.UseCors("AllowBlazor");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

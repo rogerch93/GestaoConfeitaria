@@ -19,4 +19,12 @@
     <PackageReference Include="System.Net.Http.Json" Version="8.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Auth\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GestaoConfeitaria.Models.Shared\GestaoConfeitariaBiblioteca.csproj" />
+  </ItemGroup>
+
 </Project>
