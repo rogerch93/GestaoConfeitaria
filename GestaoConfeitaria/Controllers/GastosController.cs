@@ -1,10 +1,12 @@
 ﻿using GestaoConfeitaria.Data;
 using GestaoConfeitaria.Models;
+using GestaoConfeitariaBiblioteca.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Gasto = GestaoConfeitaria.Models.Gasto;
 
 namespace GestaoConfeitaria.Controllers
 {
@@ -69,7 +71,7 @@ namespace GestaoConfeitaria.Controllers
 
             if (gastoExistente == null)
             {
-                return NotFound($"Material com ID {id} não encontrado.");
+                return NotFound($"Gasto com ID {id} não encontrado.");
             }
 
             // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
@@ -82,6 +84,31 @@ namespace GestaoConfeitaria.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(gastoExistente);
+        }
+
+        [HttpPut("{id}/soft-delete")]
+        public async Task<ActionResult<Gasto>> SoftDeleteGasto(int id, [FromBody] DateTime? dataExclusao)
+        {
+            if (!dataExclusao.HasValue)
+            {
+                return BadRequest("É obrigatório informar a DataExclusao no corpo da requisição.");
+            }
+
+            var gastoExistente = await _context.Gastos
+                .FirstOrDefaultAsync(gasto => gasto.Id == id);
+
+            if (gastoExistente == null)
+            {
+                return NotFound($"Gasto com ID {id} não encontrado.");
+            }
+
+            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
+            gastoExistente.DataExclusao = dataExclusao.Value;
+
+            _context.Gastos.Update(gastoExistente);
+            await _context.SaveChangesAsync();
+
+            return Ok("Data de exclusão: " + new { DataExclusao = gastoExistente.DataExclusao });
         }
     }
 }

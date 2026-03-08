@@ -71,7 +71,7 @@ namespace GestaoConfeitaria.Controllers
 
             if (vendaExistente == null)
             {
-                return NotFound($"Material com ID {id} não encontrado.");
+                return NotFound($"Venda com ID {id} não encontrado.");
             }
 
             // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
@@ -87,5 +87,30 @@ namespace GestaoConfeitaria.Controllers
             return Ok(vendaExistente);
         }
 
+        [HttpPut("{id}/soft-delete")]
+        public async Task<ActionResult<Venda>> SoftDeleteGasto(int id, [FromBody] DateTime? dataExclusao)
+        {
+            if (!dataExclusao.HasValue)
+            {
+                return BadRequest("É obrigatório informar a DataExclusao no corpo da requisição.");
+            }
+
+            var vendaExistente = await _context.Gastos
+                .FirstOrDefaultAsync(venda => venda.Id == id);
+
+            if (vendaExistente == null)
+            {
+                return NotFound($"Venda com ID {id} não encontrado.");
+            }
+
+            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
+            vendaExistente.DataExclusao = dataExclusao.Value;
+
+            _context.Gastos.Update(vendaExistente);
+            await _context.SaveChangesAsync();
+
+            return Ok("Data de exclusão: " + new { DataExclusao = vendaExistente.DataExclusao });
+        }
     }
+
 }
