@@ -100,13 +100,18 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<GroqService>();
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowBlazor", builder => builder.WithOrigins("https://localhost:7031/").AllowAnyMethod().AllowAnyHeader());
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("BlazorDev", p =>
+        p.WithOrigins("https://localhost:5001", "https://localhost:xxxx")  // portas do Blazor
+         .AllowAnyMethod()
+         .AllowAnyHeader()
+         .AllowCredentials());
 });
 
 var app = builder.Build();
 
-app.UseCors("AllowBlazor");
+app.UseCors("BlazorDev");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -117,7 +122,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRateLimiter();
-app.UseAuthentication();
+//app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
