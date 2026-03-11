@@ -1,0 +1,64 @@
+﻿@page "/login"
+
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h3>Login</h3>
+
+<EditForm Model="model" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Usuário</label>
+        <InputText @bind-Value="model.Username" />
+    </div>
+    <div>
+        <label>Senha</label>
+        <InputText type="password" @bind-Value="model.Password" />
+    </div>
+    <button type="submit">Entrar</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <p style="color:red">@error</p>
+}
+
+@code {
+    private LoginModel model = new();
+    private string? error;
+
+    private class LoginModel
+    {
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/login", model);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                await AuthProvider.LoginAsync(result!.Token);
+                Nav.NavigateTo("/");
+            }
+            else
+            {
+                error = "Login falhou";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private class LoginResponse
+    {
+        public string Token { get; set; } = "";
+    }
+}

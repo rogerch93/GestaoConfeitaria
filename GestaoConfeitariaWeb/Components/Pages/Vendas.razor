@@ -1,0 +1,62 @@
+﻿@page "/vendas"
+@using GestaoConfeitariaBiblioteca.Models
+@using GestaoConfeitariaWeb.Service
+@rendermode InteractiveServer
+@inject VendaServices vendaServices
+@inject NavigationManager Nav
+
+<PageTitle>Vendas - Gestão Confeitaria</PageTitle>
+
+<h3>Lista de Vendas</h3>
+
+@if (vendas == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (!vendas.Any())
+{
+    <p>Nenhuma venda registrada.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Data</th>
+                <th>Valor Total</th>
+                <th>Qtd Bolos</th>
+                <th>Pagamento</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in vendas)
+            {
+                <tr>
+                    <td>@v.Id</td>
+                    <td>@v.Data.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@v.ValorTotal.ToString("C2")</td>
+                    <td>@v.QuantidadeBolos</td>
+                    <td>@v.FormaPagamento</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Venda>? vendas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            vendas = await vendaServices.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            // Trate erro de verdade depois (toast, etc.)
+            Console.WriteLine($"Erro ao carregar vendas: {ex.Message}");
+        }
+    }
+}
