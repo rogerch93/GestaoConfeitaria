@@ -1,6 +1,5 @@
 ﻿using GestaoConfeitaria.Data;
 using GestaoConfeitaria.Models;
-using GestaoConfeitariaBiblioteca.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
