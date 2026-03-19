@@ -1,9 +1,13 @@
 ﻿using GestaoConfeitaria.Auth;
 using GestaoConfeitaria.Data;
+using GestaoConfeitaria.Features.Auth;
 using GestaoConfeitaria.Models;
 using GestaoConfeitaria.Request.Auth;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,68 +32,28 @@ namespace GestaoConfeitaria.Controllers
         }
 
         [HttpPostAttribute("login")]
-        public async Task<IActionResult> Login(Auth.LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] User user)
         {
-            // Usuário fixo para demonstração
-            if (request.Username == "admin" && request.Password == "12345")
+            var usuario = await _db.Users.FirstOrDefaultAsync(u => u.Username == user.Username);
+
+            if(usuario == null || !PasswordHasher.VerifyPassword(user.PasswordHash, usuario.PasswordHash))
             {
-                var sectionFixed = _config.GetSection("JwtSettings");
-                if (!sectionFixed.Exists())
-                    return Problem("Seção JwtSettings não encontrada no configuration");
-
-                var jwtSettingsFixed = sectionFixed.Get<JwtSettings>();
-                if (jwtSettingsFixed == null || string.IsNullOrEmpty(jwtSettingsFixed.SecretKey))
-                    return Problem("JwtSettings carregado, mas SecretKey vazia ou null");
-
-                var claimsFixed = new[]
-                {
-                    new Claim(ClaimTypes.Name, request.Username),
-                    new Claim(ClaimTypes.Role, "Admin")
-                };
-
-                var keyFixed = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettingsFixed.SecretKey));
-                var credsFixed = new SigningCredentials(keyFixed, SecurityAlgorithms.HmacSha256);
-
-                var tokenFixed = new JwtSecurityToken(
-                    issuer: jwtSettingsFixed.Issuer,
-                    audience: jwtSettingsFixed.Audience,
-                    claims: claimsFixed,
-                    expires: DateTime.UtcNow.AddMinutes(jwtSettingsFixed.ExpiresInMinutes),
-                    signingCredentials: credsFixed);
-
-                return Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(tokenFixed) });
+                return Unauthorized("Credenciais inválidas");
             }
 
-            // Usuário do banco
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-                return Unauthorized("Credenciais Inválidas");
-
-            var section = _config.GetSection("JwtSettings");
-            if (!section.Exists())
-                return Problem("Seção JwtSettings não encontrada no configuration");
-
-            var jwtSettings = section.Get<JwtSettings>();
-            if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.SecretKey))
-                return Problem("JwtSettings carregado, mas SecretKey vazia ou null");
-
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role ?? "User"),
+                new Claim("UserId", user.Id.ToString())
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
 
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings.Issuer,
-                audience: jwtSettings.Audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(jwtSettings.ExpiresInMinutes),
-                signingCredentials: creds);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-            return Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(token) });
+            return NoContent();
 
         }
 
