@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,7 +75,48 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidAudience = jwtSettings.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            if (!string.IsNullOrEmpty(accessToken) && context.Request.Path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+}).AddCookie(options =>
+{
+    options.Cookie.Name = ".GestaoConfeitaria.Auth";          // nome do cookie (pode mudar)
+    options.Cookie.HttpOnly = true;                           // protege contra JS
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // só HTTPS
+    options.Cookie.SameSite = SameSiteMode.Strict;            // anti-CSRF
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);        // tempo de expiração
+    options.SlidingExpiration = true;                         // renova se usar
+    options.LoginPath = "/login";                             // opcional
+    options.AccessDeniedPath = "/access-denied";              // opcional
+
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
 });
+
+//builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+//    .AddCookie(options =>
+//    {
+//        options.Cookie.Name = ".GestaoConfeitaria.Auth";          // nome do cookie (pode mudar)
+//        options.Cookie.HttpOnly = true;                           // protege contra JS
+//        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // só HTTPS
+//        options.Cookie.SameSite = SameSiteMode.Strict;            // anti-CSRF
+//        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);        // tempo de expiração
+//        options.SlidingExpiration = true;                         // renova se usar
+//        options.LoginPath = "/login";                             // opcional
+//        options.AccessDeniedPath = "/access-denied";              // opcional
+//    });
 
 builder.Services.AddAuthorization();
 
@@ -100,13 +142,15 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<GroqService>();
 
-builder.Services.AddCors(opt =>
+builder.Services.AddCors(options =>
 {
-    opt.AddPolicy("BlazorDev", p =>
-        p.WithOrigins("https://localhost:5001", "https://localhost:xxxx")  // portas do Blazor
-         .AllowAnyMethod()
-         .AllowAnyHeader()
-         .AllowCredentials());
+    options.AddPolicy("AllowBlazorDev", policy =>
+    {
+        policy.WithOrigins("https://localhost:7029/")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
@@ -122,7 +166,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRateLimiter();
-//app.UseAuthentication();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

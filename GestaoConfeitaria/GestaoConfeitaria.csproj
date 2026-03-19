@@ -20,10 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Auth\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\GestaoConfeitaria.Models.Shared\GestaoConfeitariaBiblioteca.csproj" />
   </ItemGroup>
 
