@@ -1,8 +1,9 @@
 ﻿using GestaoConfeitaria.Auth;
 using GestaoConfeitaria.Data;
 using GestaoConfeitaria.Features.Auth;
-using GestaoConfeitaria.Models;
+
 using GestaoConfeitaria.Request.Auth;
+using GestaoConfeitaria.Domain.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;

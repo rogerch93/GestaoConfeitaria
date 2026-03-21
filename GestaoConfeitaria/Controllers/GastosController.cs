@@ -1,113 +1,63 @@
-﻿using GestaoConfeitaria.Data;
-using GestaoConfeitaria.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using GestaoConfeitaria.Application.DTOs;
+using GestaoConfeitaria.Application.Interfaces;
+using GestaoConfeitaria.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using Gasto = GestaoConfeitaria.Models.Gasto;
 
-namespace GestaoConfeitaria.Controllers
+namespace GestaoConfeitaria.Api.Controllers
 {
     [Route("api/gastos")]
-    [EnableRateLimiting("limiteRequisicao")]
     [ApiController]
-    [Authorize]
     public class GastosController : ControllerBase
     {
-        private readonly BoloDbContext _context;
+        private readonly IGastoService _gastoService;
+        private readonly IMapper _mapper;
 
-        public GastosController(BoloDbContext context)
+        public GastosController(IGastoService gastoService, IMapper mapper)
         {
-            _context = context;
+            _gastoService = gastoService;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Gasto>>> GetGasto()
+        public async Task<ActionResult<List<GastoDto>>> GetGastos()
         {
-            var gastos = await _context.Gastos
-                .Where(gastos => gastos.DataExclusao == null)
-                .OrderByDescending(gastos => gastos.Data)
-                .ToListAsync();
-            return Ok(gastos);
+            var gastos = await _gastoService.GetAllAsync();
+            return Ok(_mapper.Map<List<GastoDto>>(gastos));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetGastosById(int id)
+        public async Task<ActionResult<GastoDto>> GetById(int id)
         {
-            Gasto? gasto = _context.Gastos.Where(gastos => gastos.DataExclusao == null).FirstOrDefault(gasto => gasto.Id == id);
-
+            var gasto = await _gastoService.GetByIdAsync(id);
             if (gasto == null)
-            {
                 return NotFound("Gasto não encontrado.");
-            }
 
-            return Ok(gasto);
+            return Ok(_mapper.Map<GastoDto>(gasto));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Gasto>> Gasto(Gasto gasto)
+        public async Task<ActionResult<GastoDto>> Create([FromBody] GastoCreateDto dto)
         {
-            _context.Gastos.Add(gasto);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetGasto), new { id = gasto.Id }, gasto);
-        }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<Gasto>> UpDateGasto(int id, [FromBody] Gasto gastoAtualizado)
-        {
-            if (gastoAtualizado == null)
-            {
-                return BadRequest("Corpo da requisição não pode ser nulo.");
-            }
+            var gasto = new Gasto(dto.Descricao, dto.Valor, dto.Usuario);
 
-            if (id != gastoAtualizado.Id)
-            {
-                return BadRequest("O ID na URL deve ser igual ao ID do corpo da requisição.");
-            }
+            await _gastoService.AddAsync(gasto);
 
-            var gastoExistente = await _context.Gastos.Where(gastos => gastos.DataExclusao == null).FirstOrDefaultAsync(gasto => gasto.Id == id);
+            var resultDto = _mapper.Map<GastoDto>(gasto);
 
-            if (gastoExistente == null)
-            {
-                return NotFound($"Gasto com ID {id} não encontrado.");
-            }
-
-            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
-            gastoExistente.Descricao = gastoAtualizado.Descricao;
-            gastoExistente.Usuario = gastoAtualizado.Usuario;
-            gastoExistente.Data = gastoAtualizado.Data;
-            gastoExistente.Valor = gastoAtualizado.Valor;
-
-            _context.Gastos.Update(gastoExistente);
-            await _context.SaveChangesAsync();
-
-            return Ok(gastoExistente);
+            return CreatedAtAction(nameof(GetById), new { id = gasto.Id }, resultDto);
         }
 
         [HttpPut("{id}/soft-delete")]
-        public async Task<ActionResult<Gasto>> SoftDeleteGasto(int id, [FromBody] DateTime? dataExclusao)
+        public async Task<IActionResult> SoftDelete(int id, [FromBody] DateTime dataExclusao)
         {
-            if (!dataExclusao.HasValue)
-            {
-                return BadRequest("É obrigatório informar a DataExclusao no corpo da requisição.");
-            }
-
-            var gastoExistente = await _context.Gastos
-                .FirstOrDefaultAsync(gasto => gasto.Id == id);
-
-            if (gastoExistente == null)
-            {
+            var sucesso = await _gastoService.SoftDeleteAsync(id, dataExclusao);
+            if (!sucesso)
                 return NotFound($"Gasto com ID {id} não encontrado.");
-            }
 
-            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
-            gastoExistente.DataExclusao = dataExclusao.Value;
-
-            _context.Gastos.Update(gastoExistente);
-            await _context.SaveChangesAsync();
-
-            return Ok("Data de exclusão: " + new { DataExclusao = gastoExistente.DataExclusao });
+            return Ok(new { Message = "Gasto excluído com sucesso." });
         }
     }
 }

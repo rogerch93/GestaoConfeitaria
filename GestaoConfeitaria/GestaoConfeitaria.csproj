@@ -20,7 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GestaoConfeitaria.Models.Shared\GestaoConfeitariaBiblioteca.csproj" />
+
+    <ProjectReference Include="..\GestaoConfeitaria.Aplication\GestaoConfeitaria.Application.csproj" />
+
+    <ProjectReference Include="..\GestaoConfeitaria.Domain\GestaoConfeitaria.Domain.csproj" />
   </ItemGroup>
 
 </Project>

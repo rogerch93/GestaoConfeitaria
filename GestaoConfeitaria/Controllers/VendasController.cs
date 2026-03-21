@@ -1,116 +1,82 @@
-﻿using GestaoConfeitaria.Data;
-using GestaoConfeitaria.Models;
-using GestaoConfeitariaBiblioteca.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using Venda = GestaoConfeitaria.Models.Venda;
+﻿using Microsoft.AspNetCore.Mvc;
+using GestaoConfeitaria.Application.DTOs;
+using GestaoConfeitaria.Application.Interfaces;
+using GestaoConfeitaria.Domain.Models;
 
-namespace GestaoConfeitaria.Controllers
+namespace GestaoConfeitaria.Api.Controllers
 {
     [Route("api/vendas")]
-    [EnableRateLimiting("limiteRequisicao")]
     [ApiController]
-    [Authorize]
     public class VendasController : ControllerBase
     {
-        private readonly BoloDbContext _context;
+        private readonly IVendaService _vendaService;
+        private readonly IMapper _mapper;
 
-        public VendasController(BoloDbContext context)
+        public VendasController(IVendaService vendaService, IMapper mapper)
         {
-            _context = context;
+            _vendaService = vendaService;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult <IEnumerable<Venda>>> GetVendas()
+        public async Task<ActionResult<List<VendaDto>>> GetVendas()
         {
-            var vendas = await _context.Vendas
-                .Where(vendas => vendas.DataExclusao == null)
-                .OrderByDescending(vendas => vendas.Data)
-                .ToListAsync();
-            return Ok(vendas);
+            var vendas = await _vendaService.GetAllAsync();
+            return Ok(_mapper.Map<List<VendaDto>>(vendas));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetVendaById(int id)
+        public async Task<ActionResult<VendaDto>> GetVendaById(int id)
         {
-            Venda? venda = _context.Vendas.Where(vendas => vendas.DataExclusao == null).FirstOrDefault(venda => venda.Id == id);
-
+            var venda = await _vendaService.GetByIdAsync(id);
             if (venda == null)
-            {
-                return NotFound("Venda não encontrado.");
-            }
+                return NotFound("Venda não encontrada.");
 
-            return Ok(venda);
+            return Ok(_mapper.Map<VendaDto>(venda));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Venda>> Venda(Venda venda)
+        public async Task<ActionResult<VendaDto>> Create([FromBody] VendaCreateDto dto)
         {
-            _context.Vendas.Add(venda);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetVendas), new {id = venda.Id}, venda);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var venda = new Venda(dto.ValorTotal, dto.QuantidadeBolos, dto.FormaPagamento, dto.Usuario);
+
+            await _vendaService.AddAsync(venda);
+
+            var resultDto = _mapper.Map<VendaDto>(venda);
+
+            return CreatedAtAction(nameof(GetVendaById), new { id = venda.Id }, resultDto);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<Venda>> UpDateVenda(int id, [FromBody] Venda vendaAtualizado)
+        public async Task<ActionResult<VendaDto>> Update(int id, [FromBody] VendaCreateDto dto)
         {
-            if (vendaAtualizado == null)
-            {
-                return BadRequest("Corpo da requisição não pode ser nulo.");
-            }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            if (id != vendaAtualizado.Id)
-            {
-                return BadRequest("O ID na URL deve ser igual ao ID do corpo da requisição.");
-            }
-
-            var vendaExistente = await _context.Vendas.Where(venda => venda.DataExclusao == null).FirstOrDefaultAsync(venda => venda.Id == id);
-
+            var vendaExistente = await _vendaService.GetByIdAsync(id);
             if (vendaExistente == null)
-            {
-                return NotFound($"Venda com ID {id} não encontrado.");
-            }
+                return NotFound($"Venda com ID {id} não encontrada.");
 
-            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
-            vendaExistente.FormaPagamento = vendaAtualizado.FormaPagamento;
-            vendaExistente.QuantidadeBolos = vendaAtualizado.QuantidadeBolos;
-            vendaExistente.Usuario = vendaAtualizado.Usuario;
-            vendaExistente.ValorTotal = vendaAtualizado.ValorTotal;
-            vendaExistente.Data = vendaAtualizado.Data;
+            // Atualiza a entidade existente (melhor prática)
+            var updatedVenda = new Venda(dto.ValorTotal, dto.QuantidadeBolos, dto.FormaPagamento, dto.Usuario);
+            // Como não temos método Update ainda, vamos implementar depois no Service
 
-            _context.Vendas.Update(vendaExistente);
-            await _context.SaveChangesAsync();
+            await _vendaService.UpdateAsync(id, updatedVenda);
 
-            return Ok(vendaExistente);
+            return Ok(_mapper.Map<VendaDto>(updatedVenda));
         }
 
         [HttpPut("{id}/soft-delete")]
-        public async Task<ActionResult<Venda>> SoftDeleteGasto(int id, [FromBody] DateTime? dataExclusao)
+        public async Task<IActionResult> SoftDelete(int id, [FromBody] DateTime dataExclusao)
         {
-            if (!dataExclusao.HasValue)
-            {
-                return BadRequest("É obrigatório informar a DataExclusao no corpo da requisição.");
-            }
+            var sucesso = await _vendaService.SoftDeleteAsync(id, dataExclusao);
+            if (!sucesso)
+                return NotFound($"Venda com ID {id} não encontrada.");
 
-            var vendaExistente = await _context.Gastos
-                .FirstOrDefaultAsync(venda => venda.Id == id);
-
-            if (vendaExistente == null)
-            {
-                return NotFound($"Venda com ID {id} não encontrado.");
-            }
-
-            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
-            vendaExistente.DataExclusao = dataExclusao.Value;
-
-            _context.Gastos.Update(vendaExistente);
-            await _context.SaveChangesAsync();
-
-            return Ok("Data de exclusão: " + new { DataExclusao = vendaExistente.DataExclusao });
+            return Ok(new { Message = "Venda excluída com sucesso (soft delete).", DataExclusao = dataExclusao });
         }
     }
-
 }

@@ -1,111 +1,66 @@
-﻿using GestaoConfeitaria.Data;
-using GestaoConfeitaria.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using GestaoConfeitaria.Application.DTOs;
+using GestaoConfeitaria.Application.Interfaces;
+using GestaoConfeitaria.Domain.Models;
 
-namespace GestaoConfeitaria.Controllers
+namespace GestaoConfeitaria.Api.Controllers
 {
     [Route("api/materiais")]
-    [EnableRateLimiting("limiteRequisicao")]
     [ApiController]
-    [Authorize]
     public class MateriaisController : ControllerBase
     {
-        private readonly BoloDbContext _context;
+        private readonly IMaterialService _materialService;
+        private readonly IMapper _mapper;
 
-        public MateriaisController(BoloDbContext context)
+        public MateriaisController(IMaterialService materialService, IMapper mapper)
         {
-            _context = context;
+            _materialService = materialService;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Material>>> GetMateriais()
+        public async Task<ActionResult<List<MaterialDto>>> GetMateriais()
         {
-            var material = await _context.MateriaisUsados
-               .Where(material => material.DataExclusao == null)
-               .OrderByDescending(material => material.DataUso)
-               .ToListAsync();
-            return Ok(material);
+            var materiais = await _materialService.GetAllAsync();
+            return Ok(_mapper.Map<List<MaterialDto>>(materiais));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetMaterialById(int id)
+        public async Task<ActionResult<MaterialDto>> GetById(int id)
         {
-            Material? material = _context.MateriaisUsados.Where(material => material.DataExclusao == null).FirstOrDefault(material => material.Id == id);
-
-            if(material == null)
-            {
+            var material = await _materialService.GetByIdAsync(id);
+            if (material == null)
                 return NotFound("Material não encontrado.");
-            }
 
-            return Ok(material);
-        }
-        [HttpPost]
-        public async Task<ActionResult<Material>> PosVenda(Material material)
-        {
-            _context.MateriaisUsados.Add(material);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetMateriais), new { id = material.Id }, material);
+            return Ok(_mapper.Map<MaterialDto>(material));
         }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<Material>> UpDateMaterial(int id, [FromBody] Material materialAtualizado)
+        [HttpPost("pos-venda")]
+        public async Task<ActionResult<MaterialDto>> PosVenda([FromBody] MaterialCreateDto dto)
         {
-           if(materialAtualizado == null)
-           {
-               return BadRequest("Corpo da requisição não pode ser nulo.");
-           }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-           if(id != materialAtualizado.Id)
-            {
-                return BadRequest("O ID na URL deve ser igual ao ID do corpo da requisição.");
-            }
+            var material = new Material(dto.VendaId, dto.Nome, dto.Quantidade, dto.CustoUnitario);
 
-           var materialExistente = await _context.MateriaisUsados.Where(material => material.DataExclusao == null).FirstOrDefaultAsync(material => material.Id == id);
+            if (dto.DataUso.HasValue)
+                material.GetType().GetProperty("DataUso")?.SetValue(material, dto.DataUso.Value);
 
-            if(materialExistente == null)
-            {
-                return NotFound($"Material com ID {id} não encontrado.");
-            }
+            await _materialService.RegistrarUsoAsync(material);
 
-            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
-            materialExistente.Nome = materialAtualizado.Nome;
-            materialExistente.Quantidade = materialAtualizado.Quantidade;
-            materialExistente.CustoUnitario = materialAtualizado.CustoUnitario;
-            materialExistente.DataUso = materialAtualizado.DataUso;
+            var resultDto = _mapper.Map<MaterialDto>(material);
 
-            _context.MateriaisUsados.Update(materialExistente);
-            await _context.SaveChangesAsync();
-
-            return Ok(materialExistente);
+            return CreatedAtAction(nameof(GetById), new { id = material.Id }, resultDto);
         }
 
         [HttpPut("{id}/soft-delete")]
-        public async Task<ActionResult<Material>> SoftDeleteGasto(int id, [FromBody] DateTime? dataExclusao)
+        public async Task<IActionResult> SoftDelete(int id, [FromBody] DateTime dataExclusao)
         {
-            if (!dataExclusao.HasValue)
-            {
-                return BadRequest("É obrigatório informar a DataExclusao no corpo da requisição.");
-            }
+            var sucesso = await _materialService.SoftDeleteAsync(id, dataExclusao);
+            if (!sucesso)
+                return NotFound($"Material com ID {id} não encontrado.");
 
-            var materialExistente = await _context.Gastos
-                .FirstOrDefaultAsync(material => material.Id == id);
-
-            if (materialExistente == null)
-            {
-                return NotFound($"Venda com ID {id} não encontrado.");
-            }
-
-            // Atualiza apenas os listados abaixo (evita sobrescrever VendaId)
-            materialExistente.DataExclusao = dataExclusao.Value;
-
-            _context.Gastos.Update(materialExistente);
-            await _context.SaveChangesAsync();
-
-            return Ok("Data de exclusão: " + new { DataExclusao = materialExistente.DataExclusao });
+            return Ok(new { Message = "Material excluído com sucesso." });
         }
     }
 }
