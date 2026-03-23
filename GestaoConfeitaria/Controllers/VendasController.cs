@@ -2,6 +2,7 @@
 using GestaoConfeitaria.Application.DTOs;
 using GestaoConfeitaria.Application.Interfaces;
 using GestaoConfeitaria.Domain.Models;
+using AutoMapper;
 
 namespace GestaoConfeitaria.Api.Controllers
 {

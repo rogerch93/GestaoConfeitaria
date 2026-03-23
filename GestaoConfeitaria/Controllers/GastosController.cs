@@ -1,4 +1,5 @@
-﻿using GestaoConfeitaria.Application.DTOs;
+﻿using AutoMapper;
+using GestaoConfeitaria.Application.DTOs;
 using GestaoConfeitaria.Application.Interfaces;
 using GestaoConfeitaria.Domain.Models;
 using Microsoft.AspNetCore.Mvc;

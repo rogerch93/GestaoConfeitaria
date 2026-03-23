@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.1.1" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.24" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.24" />
@@ -24,6 +25,8 @@
     <ProjectReference Include="..\GestaoConfeitaria.Aplication\GestaoConfeitaria.Application.csproj" />
 
     <ProjectReference Include="..\GestaoConfeitaria.Domain\GestaoConfeitaria.Domain.csproj" />
+
+    <ProjectReference Include="..\GestaoConfeitaria.Infrastructure\GestaoConfeitaria.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

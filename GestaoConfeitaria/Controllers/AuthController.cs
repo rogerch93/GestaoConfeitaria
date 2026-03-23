@@ -1,21 +1,12 @@
-﻿using GestaoConfeitaria.Auth;
-using GestaoConfeitaria.Data;
-using GestaoConfeitaria.Features.Auth;
-
-using GestaoConfeitaria.Request.Auth;
+﻿using AutoMapper;
+using GestaoConfeitaria.Application.DTOs;
+using GestaoConfeitaria.Application.Interfaces;
 using GestaoConfeitaria.Domain.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace GestaoConfeitaria.Controllers
 {
@@ -23,30 +14,32 @@ namespace GestaoConfeitaria.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly BoloDbContext _db;
-        private readonly IConfiguration _config;
+        private readonly IAuthService _authService;
+        private readonly IMapper _mapper;
 
-        public AuthController(BoloDbContext db, IConfiguration config)
+        public AuthController(IAuthService authService, IMapper mapper)
         {
-            _db = db;
-            _config = config;
+            _authService = authService;
+            _mapper = mapper;
         }
 
-        [HttpPostAttribute("login")]
-        public async Task<IActionResult> Login([FromBody] User user)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
         {
-            var usuario = await _db.Users.FirstOrDefaultAsync(u => u.Username == user.Username);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            if(usuario == null || !PasswordHasher.VerifyPassword(user.PasswordHash, usuario.PasswordHash))
-            {
-                return Unauthorized("Credenciais inválidas");
-            }
+            var result = await _authService.LoginAsync(loginDto);
 
+            if (!result.Success)
+                return Unauthorized(result.Message);
+
+            // Login com Cookie (mantendo o comportamento original)
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.Role ?? "User"),
-                new Claim("UserId", user.Id.ToString())
+                new Claim(ClaimTypes.Name, result.User.Username),
+                new Claim(ClaimTypes.Role, result.User.Role),
+                new Claim("UserId", result.User.Id.ToString())
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -54,50 +47,26 @@ namespace GestaoConfeitaria.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-            return NoContent();
-
+            return Ok(new { message = "Login realizado com sucesso" });
         }
 
         [HttpPost("register")]
-        [Authorize]
-        public async Task<IActionResult> Register([FromBody] Request.Auth.RegisterRequest req)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerDto)
         {
-            var usuarioLogado = User.FindFirstValue(ClaimTypes.Role);
-            if (usuarioLogado != "Admin")
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.RegisterAsync(registerDto);
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            return Created($"/api/auth/users/{result.UserId}", new
             {
-                return StatusCode(403, "Somente Usuários com a permissão de Admin podem criar novos Usuários.");
-            }
-            if (string.IsNullOrWhiteSpace(req.Username))
-                return BadRequest("Username é obrigatório");
-
-            if (string.IsNullOrWhiteSpace(req.Password))
-                return BadRequest("Password é Obrigatório");
-
-            if (req.Password.Length < 8)
-                return BadRequest("A senha deve ter pelo menos 8 caracteres");
-
-            var existente = await _db.Users.AnyAsync(u => u.Username == req.Username);
-            if (existente)
-                return Conflict("Username já esta sendo usado por outro usuário");
-
-            var hash = BCrypt.Net.BCrypt.HashPassword(req.Password);
-
-            var user = new User
-            {
-                Username = req.Username,
-                PasswordHash = hash,
-                Role = "User",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-
-            return Created($"/api/auth/users/{user.Id}", new
-            {
-                user.Id,
-                user.Username,
-                user.Role
+                result.UserId,
+                registerDto.Username,
+                Role = "User"
             });
         }
     }
