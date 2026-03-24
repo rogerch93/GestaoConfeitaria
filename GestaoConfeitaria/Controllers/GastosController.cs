@@ -2,12 +2,14 @@
 using GestaoConfeitaria.Application.DTOs;
 using GestaoConfeitaria.Application.Interfaces;
 using GestaoConfeitaria.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestaoConfeitaria.Api.Controllers
 {
     [Route("api/gastos")]
     [ApiController]
+    [Authorize]
     public class GastosController : ControllerBase
     {
         private readonly IGastoService _gastoService;

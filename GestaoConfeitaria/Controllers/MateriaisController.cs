@@ -1,13 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
 using GestaoConfeitaria.Application.DTOs;
 using GestaoConfeitaria.Application.Interfaces;
 using GestaoConfeitaria.Domain.Models;
-using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GestaoConfeitaria.Api.Controllers
 {
     [Route("api/materiais")]
     [ApiController]
+    [Authorize]
     public class MateriaisController : ControllerBase
     {
         private readonly IMaterialService _materialService;
