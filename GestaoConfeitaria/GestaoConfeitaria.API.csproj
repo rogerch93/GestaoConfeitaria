@@ -27,6 +27,8 @@
     <ProjectReference Include="..\GestaoConfeitaria.Domain\GestaoConfeitaria.Domain.csproj" />
 
     <ProjectReference Include="..\GestaoConfeitaria.Infrastructure\GestaoConfeitaria.Infrastructure.csproj" />
+
+    <ProjectReference Include="..\GestaoConfeitaria.Shared\GestaoConfeitaria.Shared.csproj" />
   </ItemGroup>
 
 </Project>
