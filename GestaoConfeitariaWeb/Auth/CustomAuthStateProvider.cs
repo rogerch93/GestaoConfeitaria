@@ -1,51 +1,79 @@
-﻿using Blazored.LocalStorage;
+﻿using GestaoConfeitaria.Shared.DTOs;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace GestaoConfeitariaWeb.Auth
+namespace GestaoConfeitariaWeb.Authentication
 {
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
-        private readonly ILocalStorageService _localStorage;
-        private readonly HttpClient _http;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private ClaimsPrincipal? _currentUser;
 
-        public CustomAuthStateProvider(ILocalStorageService localStorageService, HttpClient http)
+        public CustomAuthStateProvider(IHttpClientFactory httpClientFactory)
         {
-            _localStorage = localStorageService;
-            _http = http;
+            _httpClientFactory = httpClientFactory;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
+            // Tenta recuperar o usuário atual a partir do cookie (chamando a API)
+            var client = _httpClientFactory.CreateClient("Api");
 
-            if (string.IsNullOrEmpty(token))
+            try
             {
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                // Endpoint simples que você pode criar na API para retornar o usuário logado
+                var response = await client.GetAsync("api/auth/me");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var userInfo = await response.Content.ReadFromJsonAsync<UserInfoDto>();
+
+                    if (userInfo != null)
+                    {
+                        var claims = new List<Claim>
+                        {
+                            new Claim(ClaimTypes.Name, userInfo.Username),
+                            new Claim(ClaimTypes.Role, userInfo.Role),
+                            new Claim("UserId", userInfo.Id.ToString())
+                        };
+
+                        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                        _currentUser = new ClaimsPrincipal(identity);
+                    }
+                }
+            }
+            catch
+            {
+                // Se falhar (não logado ou cookie inválido), retorna usuário anônimo
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
             }
 
-            //decode token para claims (simples, sem validação de assinaturas)
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-
-            var claims = jwtToken.Claims.ToList();
-            var identity = new ClaimsIdentity(claims, "jwt");
-            var user = new ClaimsPrincipal(identity);
-
-            return new AuthenticationState(user);
+            return new AuthenticationState(_currentUser ?? new ClaimsPrincipal(new ClaimsIdentity()));
         }
 
-        public async Task LoginAsync(string token)
+        // Método que você chamou na página de Login
+        public async Task NotifyUserAuthenticationAsync(UserDto user)
         {
-            await _localStorage.SetItemAsync("authToken", token);
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("UserId", user.Id.ToString())
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            _currentUser = new ClaimsPrincipal(identity);
+
+            // Notifica todos os componentes que o estado de autenticação mudou
+            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
         }
 
-        public async Task LogoutAsync()
+        // Método útil para logout
+        public async Task NotifyUserLogoutAsync()
         {
-            await _localStorage.RemoveItemAsync("authToken");
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
         }
     }
 }

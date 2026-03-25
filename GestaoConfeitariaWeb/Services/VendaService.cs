@@ -1,76 +1,51 @@
-﻿using GestaoConfeitariaBiblioteca.Models;
+﻿using GestaoConfeitaria.Domain.Models;
+using GestaoConfeitaria.Shared.DTOs;
 using System.Net.Http.Json;
 
-namespace GestaoConfeitariaWeb.Service
+namespace GestaoConfeitariaWeb.Services
 {
-    public class VendaServices
+    public interface IVendaService
     {
-        private readonly HttpClient _http;
+        Task<List<VendaDto>> GetAllAsync();
+        Task<VendaDto> GetByIdAsync(int id);
+        Task<VendaDto> CreateAsync(VendaCreateDto dto);
+        Task<VendaDto> UpdateAsync(int id, VendaCreateDto dto);
+        Task<bool> SoftDeleteAsync(int id, DateTime dataExclusao);
+    }
 
-        public VendaServices(IHttpClientFactory factory)
+    public class VendaService : IVendaService
+    {
+        private readonly HttpClient _httpClient;
+
+        public VendaService(IHttpClientFactory factory)
         {
-            _http = factory.CreateClient("Api");
+            _httpClient = factory.CreateClient("GestaoApi");
         }
 
-        public async Task<List<Venda>> GetAllAsync()
+        public async Task<List<VendaDto>> GetAllAsync()
+            => await _httpClient.GetFromJsonAsync<List<VendaDto>>("api/vendas") ?? new();
+
+        public async Task<VendaDto?> GetByIdAsync(int id)
+            => await _httpClient.GetFromJsonAsync<VendaDto>($"api/vendas/{id}");
+
+        public async Task<VendaDto> CreateAsync(VendaCreateDto dto)
         {
-            var response = await _http.GetAsync("api/vendas");
+            var response = await _httpClient.PostAsJsonAsync("api/vendas", dto);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<List<Venda>>() ?? new();
+            return await response.Content.ReadFromJsonAsync<VendaDto>() ?? throw new Exception("Erro ao criar venda");
         }
 
-        public async Task<Venda> GetVendaByIdAsync(int id)
+        public async Task<VendaDto> UpdateAsync(int id, VendaCreateDto dto)
         {
-            var response = await _http.GetAsync($"api/vendas/{id}");
+            var response = await _httpClient.PutAsJsonAsync($"api/vendas/{id}", dto);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<Venda>() ?? new();
+            return await response.Content.ReadFromJsonAsync<VendaDto>() ?? throw new Exception("Erro ao atualizar venda");
         }
 
-        public async Task<Venda> CreateVendaAsync(Venda venda)
+        public async Task<bool> SoftDeleteAsync(int id, DateTime dataExclusao)
         {
-            if(venda == null) throw new ArgumentNullException(nameof(venda));
-
-            var response = await _http.PostAsJsonAsync("api/vendas", venda);
-
-            response.EnsureSuccessStatusCode();
-
-            var vendaCriada = await response.Content.ReadFromJsonAsync<Venda>();
-            return vendaCriada ?? throw new Exception("Não foi possível desserializar a venda criada");
+            var response = await _httpClient.PutAsJsonAsync($"api/vendas/{id}/soft-delete", dataExclusao);
+            return response.IsSuccessStatusCode;
         }
-
-        public async Task UpdateVendaAsync(int id, Venda venda)
-        {
-            if (venda == null)
-                throw new ArgumentNullException(nameof(venda));
-
-            if (id <= 0)
-                throw new ArgumentException("ID inválido", nameof(id));
-
-            var response = await _http.PutAsJsonAsync($"api/vendas/{id}", venda);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new HttpRequestException($"Erro ao atualizar venda. Status: {response.StatusCode}. Detalhe: {errorContent}");
-            }
-        }
-
-        public async Task UpdateVendaSoftDelete(int id, Venda venda)
-        {
-            if (venda == null)
-                throw new ArgumentNullException(nameof(venda));
-
-            if (id <= 0)
-                throw new ArgumentException("ID inválido", nameof(id));
-
-            var response = await _http.PutAsJsonAsync($"api/vendas/{id}", venda);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new HttpRequestException($"Erro ao realizar o Softdelete de venda. Status: {response.StatusCode}. Detalhe: {errorContent}");
-            }
-        }
-
     }
 }

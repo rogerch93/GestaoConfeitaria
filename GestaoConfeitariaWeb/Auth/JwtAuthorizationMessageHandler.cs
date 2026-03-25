@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using System.Net.Http.Headers;
 
 namespace GestaoConfeitariaWeb.Auth
 {
@@ -14,9 +15,10 @@ namespace GestaoConfeitariaWeb.Auth
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
-            if (!string.IsNullOrEmpty(token))
+
+            if (!string.IsNullOrWhiteSpace(token))
             {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
             return await base.SendAsync(request, cancellationToken);

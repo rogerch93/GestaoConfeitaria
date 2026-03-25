@@ -1,7 +1,8 @@
 using Blazored.LocalStorage;
 using GestaoConfeitariaWeb.Auth;
+using GestaoConfeitariaWeb.Authentication;
 using GestaoConfeitariaWeb.Components;
-using GestaoConfeitariaWeb.Service;
+using GestaoConfeitariaWeb.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -12,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddScoped<VendaServices>();
+builder.Services.AddScoped<VendaService>();
 
 // LocalStorage para guardar o token JWT
 builder.Services.AddBlazoredLocalStorage();

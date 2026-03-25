@@ -1,8 +1,9 @@
 ﻿@page "/vendas"
-@using GestaoConfeitariaBiblioteca.Models
-@using GestaoConfeitariaWeb.Service
+@using GestaoConfeitaria.Domain.Models
+@using GestaoConfeitaria.Shared.DTOs
+@using GestaoConfeitariaWeb.Services
 @rendermode InteractiveServer
-@inject VendaServices vendaServices
+@inject VendaService vendaServices
 @inject NavigationManager Nav
 
 <PageTitle>Vendas - Gestão Confeitaria</PageTitle>
@@ -45,7 +46,7 @@ else
 }
 
 @code {
-    private List<Venda>? vendas;
+    private List<VendaDto>? vendas;
 
     protected override async Task OnInitializedAsync()
     {

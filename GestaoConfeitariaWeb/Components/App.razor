@@ -9,11 +9,22 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="GestaoConfeitariaWeb.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
     <HeadOutlet />
 </head>
 
 <body>
-    <Routes />
+    <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            Ocorreu um erro. Esta aplicação pode não responder mais até recarregar.
+        </environment>
+        <environment include="Development">
+            Uma exceção não tratada ocorreu. Veja as ferramentas do desenvolvedor do navegador para detalhes.
+        </environment>
+        <a href="" class="reload">Recarregar</a>
+        <a class="dismiss">🗙</a>
+    </div>
     <script src="_framework/blazor.web.js"></script>
 </body>
 
