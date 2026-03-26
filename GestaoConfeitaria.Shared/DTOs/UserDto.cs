@@ -20,4 +20,11 @@ namespace GestaoConfeitaria.Shared.DTOs
         public string Role { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }
+
+    public class LoginResult
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public UserDto? User { get; set; }
+    }
 }
