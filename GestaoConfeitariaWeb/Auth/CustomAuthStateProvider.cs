@@ -55,6 +55,8 @@ namespace GestaoConfeitariaWeb.Authentication
         // Método que você chamou na página de Login
         public async Task NotifyUserAuthenticationAsync(UserDto user)
         {
+            if (user == null) return;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username),
@@ -65,7 +67,7 @@ namespace GestaoConfeitariaWeb.Authentication
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             _currentUser = new ClaimsPrincipal(identity);
 
-            // Notifica todos os componentes que o estado de autenticação mudou
+            // Notifica de forma segura
             NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
         }
 

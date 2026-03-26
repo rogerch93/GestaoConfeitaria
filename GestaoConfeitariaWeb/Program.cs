@@ -3,11 +3,17 @@ using GestaoConfeitariaWeb.Auth;
 using GestaoConfeitariaWeb.Authentication;
 using GestaoConfeitariaWeb.Components;
 using GestaoConfeitariaWeb.Services;
+using GestaoConfeitariaWeb.Services.Auth;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddServerSideBlazor(options =>
+{
+    options.DetailedErrors = true;
+});
 
 
 builder.Services.AddRazorComponents()
@@ -31,6 +37,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 // Autenticação custom (CustomAuthStateProvider)
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
@@ -44,10 +52,15 @@ builder.Services.AddScoped<JwtAuthorizationMessageHandler>();
 // HttpClient nomeado e único para a API
 builder.Services.AddHttpClient("Api", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7230/");  //porta da API
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7230/");
 })
-.AddHttpMessageHandler<JwtAuthorizationMessageHandler>();     // injeta token automaticamente
+.AddHttpMessageHandler<JwtAuthorizationMessageHandler>(); // este handler estava gerando problema rever configuração depois...
+
+// Client específico para Auth (sem handler problemático)
+builder.Services.AddHttpClient("AuthApi", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7230/");
+});
 
 // Acesso ao HttpContext no servidor, útil para claims ou cookies
 builder.Services.AddHttpContextAccessor();
