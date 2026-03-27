@@ -10,7 +10,9 @@
     <PackageReference Include="BlazorJWT.BlazoredLocalStorage" Version="0.1.3" />
   </ItemGroup>
 
-  <ItemGroup>    <ProjectReference Include="..\GestaoConfeitaria.Domain\GestaoConfeitaria.Domain.csproj" />    <ProjectReference Include="..\GestaoConfeitaria.Shared\GestaoConfeitaria.Shared.csproj" />
+  <ItemGroup>    
+	<ProjectReference Include="..\GestaoConfeitaria.Domain\GestaoConfeitaria.Domain.csproj" />    
+	<ProjectReference Include="..\GestaoConfeitaria.Shared\GestaoConfeitaria.Shared.csproj" />
     <ProjectReference Include="..\GestaoConfeitaria\GestaoConfeitaria.API.csproj" />
   </ItemGroup>
 
