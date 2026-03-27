@@ -1,9 +1,8 @@
 <Solution>
   <Project Path="GestaoConfeitaria.Aplication/GestaoConfeitaria.Application.csproj" Id="06e49802-636d-499e-80c2-9e0bd5c66cc1" />
-  <Project Path="GestaoConfeitaria.Blazor/GestaoConfeitaria.Blazor.csproj" Id="df2a46c8-50b0-4ba4-bace-733a34fb709f" />
+  <Project Path="GestaoConfeitaria.Blazor/GestaoConfeitaria.Blazor.csproj" />
   <Project Path="GestaoConfeitaria.Domain/GestaoConfeitaria.Domain.csproj" />
   <Project Path="GestaoConfeitaria.Infrastructure/GestaoConfeitaria.Infrastructure.csproj" Id="8abc55fd-486c-49cd-956d-11c8e7a83481" />
   <Project Path="GestaoConfeitaria.Shared/GestaoConfeitaria.Shared.csproj" Id="c73e298f-ad27-4f2d-80dc-bc3224c8f711" />
   <Project Path="GestaoConfeitaria/GestaoConfeitaria.API.csproj" />
-  <Project Path="GestaoConfeitariaWeb/GestaoConfeitariaWeb.csproj" Id="70165acc-b33b-41b6-bf36-c5bd2ef5a2d5" />
 </Solution>
