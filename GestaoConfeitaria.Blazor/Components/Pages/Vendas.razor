@@ -1,5 +1,5 @@
 ﻿@page "/vendas"
-@using GestaoConfeitaria.Domain.Models
+@using GestaoConfeitaria.Blazor.Services
 @using GestaoConfeitaria.Shared.DTOs
 @using GestaoConfeitariaWeb.Services
 @rendermode InteractiveServer
@@ -10,11 +10,11 @@
 
 <h3>Lista de Vendas</h3>
 
-@if (vendas == null)
+@if (vendasDto == null)
 {
     <p><em>Carregando...</em></p>
 }
-else if (!vendas.Any())
+else if (!vendasDto.Any())
 {
     <p>Nenhuma venda registrada.</p>
 }
@@ -23,18 +23,16 @@ else
     <table class="table">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Data</th>
                 <th>Valor Total</th>
-                <th>Qtd Bolos</th>
+                <th>Qtd. Bolos</th>
                 <th>Pagamento</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var v in vendas)
+            @foreach (var v in vendasDto)
             {
                 <tr>
-                    <td>@v.Id</td>
                     <td>@v.Data.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@v.ValorTotal.ToString("C2")</td>
                     <td>@v.QuantidadeBolos</td>
@@ -46,18 +44,11 @@ else
 }
 
 @code {
-    private List<VendaDto>? vendas;
+    private List<VendaDto> vendasDto = new();
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            vendas = await vendaServices.GetAllAsync();
-        }
-        catch (Exception ex)
-        {
-            // Trate erro de verdade depois (toast, etc.)
-            Console.WriteLine($"Erro ao carregar vendas: {ex.Message}");
-        }
+        var vendasDomain = await vendaServices.GetAllAsync();
+       
     }
 }
