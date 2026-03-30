@@ -49,6 +49,15 @@ else
     protected override async Task OnInitializedAsync()
     {
         var vendasDomain = await vendaServices.GetAllAsync();
-       
+        // Mapeamento manual simples
+        vendasDto = vendasDomain.Select(v => new VendaDto
+        {
+            Id = v.Id,
+            Data = v.Data,
+            ValorTotal = v.ValorTotal,
+            QuantidadeBolos = v.QuantidadeBolos,
+            FormaPagamento = v.FormaPagamento,
+            Usuario = v.Usuario
+        }).ToList();
     }
 }
