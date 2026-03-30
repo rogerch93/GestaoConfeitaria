@@ -9,7 +9,7 @@ namespace GestaoConfeitaria.Api.Controllers
 {
     [Route("api/vendas")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class VendasController : ControllerBase
     {
         private readonly IVendaService _vendaService;
@@ -39,6 +39,7 @@ namespace GestaoConfeitaria.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<VendaDto>> Create([FromBody] VendaCreateDto dto)
         {
             if (!ModelState.IsValid)
@@ -54,6 +55,7 @@ namespace GestaoConfeitaria.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<ActionResult<VendaDto>> Update(int id, [FromBody] VendaCreateDto dto)
         {
             if (!ModelState.IsValid)
@@ -73,6 +75,7 @@ namespace GestaoConfeitaria.Api.Controllers
         }
 
         [HttpPut("{id}/soft-delete")]
+        [Authorize]
         public async Task<IActionResult> SoftDelete(int id, [FromBody] DateTime dataExclusao)
         {
             var sucesso = await _vendaService.SoftDeleteAsync(id, dataExclusao);
